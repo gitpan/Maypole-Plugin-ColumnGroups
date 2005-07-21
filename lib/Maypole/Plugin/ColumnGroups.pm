@@ -6,7 +6,7 @@ use strict;
 use Maypole::Config;
 use NEXT;
 
-our $VERSION = '0.1';
+our $VERSION = '0.2';
 
 Maypole::Config->mk_accessors( qw( column_groups ) );
 
@@ -21,30 +21,30 @@ Maypole::Plugin::ColumnGroups - set up column groups in Maypole
     # Maypole will use the column 'name' or 'title', if it exists, or a primary 
     # key column that is not called 'id'. Otherwise, you need to tell Maypole 
     # what column to stringify objects to:
-    __PACKAGE__->config->column_groups( { Stringify => { person => 'first_name' },
-                                                         car    => 'model' },
-                                                         widget => 'part_no' },
-                                                         } } );
-        
-    __PACKAGE__->column_groups( { Editor      => { article => [ qw( content keywords publish location ) ],
-                                                   finance => [ qw( invoice credit bribe entertainment ) ],
-                                                   },
-                                  Writer      => { article => [ qw( content keywords ) ] },
-                                  Reviewer    => { article => [ qw( rating ) ] },
-                                  } );
-    
+    __PACKAGE__->config->column_groups( { person => { Stringify => 'first_name' },
+                                          car    => { Stringify => 'model' },
+                                          widget => { Stringify => 'part_no' },
+                                          
+                                          article => { Editor   => [ qw( content keywords publish location ) ],
+                                                       Writer   => [ qw( content keywords ) ],
+                                                       Reviewer => [ qw( rating ) ],
+                                                       },
+                                          finance => { Editor => [ qw( invoice credit bribe entertainment ) ] },
+                                          } );
+                                          
     #
     # An example using Maypole::Plugin::Config::Apache:
     #
-    PerlAddVar MaypoleColumnGroups "Stringify => { person => 'first_name' }"
-    PerlAddVar MaypoleColumnGroups "Stringify => { car    => 'model' }"
-    PerlAddVar MaypoleColumnGroups "Stringify => { widget => 'part_no' }"
+    PerlAddVar MaypoleColumnGroups "person => { Stringify => 'first_name' }"
+    PerlAddVar MaypoleColumnGroups "car    => { Stringify => 'model' }"
+    PerlAddVar MaypoleColumnGroups "widget => { Stringify => 'part_no' }"
 
-    PerlAddVar MaypoleColumnGroups "Editor      => { article => [ qw( content keywords publish location ) ] }"
-    PerlAddVar MaypoleColumnGroups "Editor      => { finance => [ qw( invoice credit bribe entertainment ) ] }"
-    PerlAddVar MaypoleColumnGroups "Writer      => { article => [ qw( content keywords ) ] }"
-    PerlAddVar MaypoleColumnGroups "Reviewer    => { article => [ qw( rating ) ] }"
-     
+    PerlAddVar MaypoleColumnGroups "article => { Editor   => [ qw( content keywords publish location ) ] }"
+    PerlAddVar MaypoleColumnGroups "article => { Writer   => [ qw( content keywords ) ] }"
+    PerlAddVar MaypoleColumnGroups "article => { Reviewer => [ qw( rating ) ] }"
+    PerlAddVar MaypoleColumnGroups "finance => { Editor   => [ qw( invoice credit bribe entertainment ) ] }"
+
+         
 =head1 DESCRIPTION
 
 Maypole use the C<Stringify> column group to decide which column to use when, for example, displaying a 
@@ -75,18 +75,18 @@ sub setup
     
     $r->NEXT::DISTINCT::setup( @_ );
     
-    # Group => { $table => $column_or_columns }
+    # $table => { Group => $column or $columns }
     my $col_groups = $r->config->column_groups;
     
     my $loader = $r->config->loader;
     
-    foreach my $group ( keys %$col_groups )
+    foreach my $table ( keys %$col_groups )
     {
-        my $tables = $col_groups->{ $group };
+        my $groups = $col_groups->{ $table };
         
-        foreach my $table ( keys %$tables )
+        foreach my $group ( keys %$groups )
         {
-            my $cols = $tables->{ $table };
+            my $cols = $groups->{ $group };
             
             my @cols = ref( $cols ) eq 'ARRAY' ? @$cols : ( $cols );
             
