@@ -6,9 +6,9 @@ use strict;
 use Maypole::Config;
 use NEXT;
 
-our $VERSION = '0.2';
+our $VERSION = '0.3';
 
-Maypole::Config->mk_accessors( qw( column_groups ) );
+Maypole::Config->mk_accessors( qw( column_groups field_groups ) );
 
 =head1 NAME
 
@@ -56,14 +56,37 @@ Authorization could make heavy use of column groups to decide who has access
 to what columns of different tables. It's easy enough to set up column groups by hand, but it's also 
 useful to be able to stuff all that information into the configuration data. 
 
+L<Maypole::FormBuilder> defines several pairs of C<*_columns> and C<*_fields> accessors in the model 
+class, generally one pair for each main template (C<view>, C<edit>, C<addnew> etc.). You could override 
+these methods to look up their lists in the C<column_groups> and C<field_groups> config slots. 
+
 Setting the C<Debug> flag to 2 or higher will print some info to C<STDERR> to confirm how the groups 
 have been set up.
 
+=head1 CONFIGURATION ACCESSORS
+
+These methods are added to the Maypole configuration object. 
+
+=over 4 
+
+=item column_groups
+
+=item field_groups
+
+You may wish to use this slot to store information about different groups of non-column fields. 
+For instance, just as C<display_columns> returns a list of columns for general display in templates, 
+you may wish to define a C<display_fields> method to list C<has_many> accessors to use in the same 
+circumstances. This config slot provides a convenient location to store that information. 
+
+=back 
+
 =head1 METHODS
 
-=over
+=over 4
 
 =item setup
+
+Sets up the CDBI column groups. 
 
 =back
     
@@ -74,6 +97,8 @@ sub setup
     my $r = shift;
     
     $r->NEXT::DISTINCT::setup( @_ );
+    
+    warn "Running " . __PACKAGE__ . " setup for $r" if $r->debug;
     
     # $table => { Group => $column or $columns }
     my $col_groups = $r->config->column_groups;
